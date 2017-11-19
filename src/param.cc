@@ -8,6 +8,7 @@ std::string Param::backup_file_ = "";
 std::string Param::restore_file_ = "";
 uint32_t Param::backup_interval_ = 1800;
 double Param::simulation_time_step_ = 0.01;
+size_t Param::step_global_ = 0;
 double Param::simulation_max_displacement_ = 3.0;
 bool Param::run_mechanical_interactions_ = true;
 bool Param::bound_space_ = false;

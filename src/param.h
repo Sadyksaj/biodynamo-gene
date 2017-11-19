@@ -9,8 +9,9 @@
 #include "cpptoml/cpptoml.h"
 
 namespace bdm {
-
 struct Param {
+
+  static size_t step_global_;
   // simulation values ---------------------------------------------------------
 
   /// Backup file name for full simulation backups\n

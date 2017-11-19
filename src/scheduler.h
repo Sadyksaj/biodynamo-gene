@@ -17,7 +17,6 @@
 #include "visualization/catalyst_adaptor.h"
 
 namespace bdm {
-
 template <typename TResourceManager = ResourceManager<>,
           typename TGrid = Grid<>>
 class Scheduler {
@@ -58,6 +57,7 @@ class Scheduler {
       }
 
       total_steps_++;
+      Param::step_global_ = total_steps_;
 
       // Backup
       using std::chrono::seconds;
@@ -70,12 +70,12 @@ class Scheduler {
       }
     }
   }
-
   void Simulate(unsigned steps) {
     // TODO(lukas) backup and restore should work for every simulation object in
     // ResourceManager
     if (backup_.RestoreEnabled() && restore_point_ > total_steps_ + steps) {
       total_steps_ += steps;
+      Param::step_global_ = total_steps_;
       return;
     } else if (backup_.RestoreEnabled() && restore_point_ > total_steps_ &&
                restore_point_ < total_steps_ + steps) {
@@ -84,6 +84,7 @@ class Scheduler {
 
       steps = total_steps_ + steps - restore_point_;
       total_steps_ = restore_point_;
+      Param::step_global_ = total_steps_;
     }
 
     grid_->Initialize();
@@ -104,6 +105,7 @@ class Scheduler {
       }
 
       total_steps_++;
+      Param::step_global_ = total_steps_;
 
       // Backup
       using std::chrono::seconds;
