@@ -7,7 +7,12 @@ namespace bdm {
 
   using std::array;
   using std::vector;
+  using std::string;
+  // using bdm::Param::step_global_;
+  //This constant specifies the amount of different proteins in the simulation
   const int protein_amount = 3;
+  //This constant specifies method using for solving differential equation {"Euler", "RK4"}.
+  const string DE_solve_method = "RK4";
 
   BDM_SIM_OBJECT(GeneCell, Cell) {
     BDM_SIM_OBJECT_HEADER(GeneCellExt, 1, substances_);
@@ -43,32 +48,45 @@ namespace bdm {
       override {
         auto daughter_cast = static_cast<Self<Scalar>*>(daughter);
         for (int j =  0; j < protein_amount; j++){
-          // daughter_cast->substances_[0][j] = substances_[0][j] * 0.5;
-          substances_[0][j] = substances_[0][j] * 0.5;
+          daughter_cast->substances_[0][j] = substances_[0][j] * 0.4;
+          substances_[0][j] = substances_[0][j] * 0.6;
         }
         // forward call to implementation in CellExt
-        Base::DivideImpl(daughter, volume_ratio, phi, theta);
+        Base::DivideImpl(daughter_cast, volume_ratio, phi, theta);
       }
   };
 
   struct GeneCalculation : public BaseBiologyModule {
-    std::string using_method = "Euler";
     double time_step = Param::simulation_time_step_;
+    // size_t& step = Param::step_global_;
 
-    GeneCalculation() : BaseBiologyModule(gAllBmEvents), using_method("Euler"){}
-
-    GeneCalculation(std::string method) : using_method(method){}
+    GeneCalculation() : BaseBiologyModule(gAllBmEvents){}
 
     template <typename T>
     void Run(T* cell) {
       std::cout<<"evolved\n";
-      if (using_method == "Euler"){
+      if (DE_solve_method == "Euler"){
         // evolve method needs in current time of simulation
-        vector<double> update_value = cell->evolve(1.0);
+        vector<double> update_value = cell->evolve(Param::step_global_ * time_step);
         std::cout<<cell->substances_[0][1] << " - evolved to 1\n";
         for (int i = 0; i < protein_amount; i++){
           cell->substances_[0][i] += update_value[i] * time_step;
         }
+      }
+      else if (DE_solve_method == "RK4"){
+        std::cout<<cell->substances_[0][1] << " - evolved to 1\n";
+        vector<double> k1 = cell->evolve(Param::step_global_ * time_step);
+        for (int i = 0; i < protein_amount; i++)
+          cell->substances_[0][i] += time_step*k1[i]/2.0f;
+        vector<double> k2 = cell->evolve(Param::step_global_ * time_step + time_step/2.0f);
+        for (int i = 0; i < protein_amount; i++)
+          cell->substances_[0][i] += time_step*k2[i]/2.0f - time_step*k1[i]/2.0f;
+        vector<double> k3 = cell->evolve(Param::step_global_ * time_step + time_step/2.0f);
+        for (int i = 0; i < protein_amount; i++)
+          cell->substances_[0][i] += time_step*k3[i] - time_step*k2[i]/2.0f;
+        vector<double> k4 = cell->evolve(Param::step_global_ * time_step + time_step);
+        for (int i = 0; i < protein_amount; i++)
+          cell->substances_[0][i] += time_step*(k1[i] + 2*k2[i] + 2*k3[i] + k4[i])/6.0f;
       }
       cell->ChangeVolume(300);
       Divide(*cell);
